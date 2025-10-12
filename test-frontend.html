@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EaseCart Frontend Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .loading { background: #fff3cd; color: #856404; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 EaseCart Frontend & Backend Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Backend API Test</h2>
+        <button onclick="testBackend()">Test Backend Connection</button>
+        <div id="backend-status" class="status loading">Click button to test...</div>
+        <pre id="backend-response"></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Frontend React App Test</h2>
+        <button onclick="testFrontend()">Test Frontend Loading</button>
+        <div id="frontend-status" class="status loading">Click button to test...</div>
+        <pre id="frontend-response"></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Authentication Test</h2>
+        <button onclick="testLogin()">Test Login API</button>
+        <div id="auth-status" class="status loading">Click button to test...</div>
+        <pre id="auth-response"></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Products API Test</h2>
+        <button onclick="testProducts()">Test Products API</button>
+        <div id="products-status" class="status loading">Click button to test...</div>
+        <pre id="products-response"></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>Quick Links</h2>
+        <button onclick="window.open('http://localhost:5173', '_blank')">Open Frontend (Port 5173)</button>
+        <button onclick="window.open('http://localhost:5000/api/products', '_blank')">Open Backend API (Port 5000)</button>
+    </div>
+
+    <script>
+        async function testBackend() {
+            const statusEl = document.getElementById('backend-status');
+            const responseEl = document.getElementById('backend-response');
+            
+            statusEl.className = 'status loading';
+            statusEl.textContent = 'Testing backend connection...';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/products');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusEl.className = 'status success';
+                    statusEl.textContent = `✅ Backend is working! Found ${data.count} products`;
+                    responseEl.textContent = JSON.stringify(data, null, 2);
+                } else {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = '❌ Backend returned an error';
+                    responseEl.textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ Cannot connect to backend: ' + error.message;
+                responseEl.textContent = error.stack;
+            }
+        }
+
+        async function testFrontend() {
+            const statusEl = document.getElementById('frontend-status');
+            const responseEl = document.getElementById('frontend-response');
+            
+            statusEl.className = 'status loading';
+            statusEl.textContent = 'Testing frontend connection...';
+            
+            try {
+                const response = await fetch('http://localhost:5173');
+                const html = await response.text();
+                
+                if (response.ok && html.includes('root')) {
+                    statusEl.className = 'status success';
+                    statusEl.textContent = '✅ Frontend is loading! React app detected';
+                    responseEl.textContent = 'HTML length: ' + html.length + ' characters\nContains React root div: Yes';
+                } else {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = '❌ Frontend may have issues';
+                    responseEl.textContent = html.substring(0, 500);
+                }
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ Cannot connect to frontend: ' + error.message;
+                responseEl.textContent = error.stack;
+            }
+        }
+
+        async function testLogin() {
+            const statusEl = document.getElementById('auth-status');
+            const responseEl = document.getElementById('auth-response');
+            
+            statusEl.className = 'status loading';
+            statusEl.textContent = 'Testing login API...';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'customer@test.com',
+                        password: 'Test123!'
+                    })
+                });
+                const data = await response.json();
+                
+                if (response.ok && data.token) {
+                    statusEl.className = 'status success';
+                    statusEl.textContent = '✅ Login API working! Token received';
+                    responseEl.textContent = JSON.stringify({
+                        ...data,
+                        token: data.token.substring(0, 50) + '...'
+                    }, null, 2);
+                } else {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = '❌ Login failed';
+                    responseEl.textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ Login API error: ' + error.message;
+                responseEl.textContent = error.stack;
+            }
+        }
+
+        async function testProducts() {
+            const statusEl = document.getElementById('products-status');
+            const responseEl = document.getElementById('products-response');
+            
+            statusEl.className = 'status loading';
+            statusEl.textContent = 'Testing products API...';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/products');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusEl.className = 'status success';
+                    statusEl.textContent = `✅ Products API working! Found ${data.count} products`;
+                    responseEl.textContent = JSON.stringify(data.data.slice(0, 2), null, 2) + '\n... and more';
+                } else {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = '❌ Products API error';
+                    responseEl.textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ Products API error: ' + error.message;
+                responseEl.textContent = error.stack;
+            }
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testBackend();
+                setTimeout(() => testFrontend(), 1000);
+                setTimeout(() => testLogin(), 2000);
+                setTimeout(() => testProducts(), 3000);
+            }, 500);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+name: EaseCart CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: |
+          server/package-lock.json
+          client/package-lock.json
+
+    - name: Install Backend Dependencies
+      run: |
+        cd server
+        npm ci
+
+    - name: Install Frontend Dependencies
+      run: |
+        cd client
+        npm ci
+
+    - name: Run Backend Tests
+      run: |
+        cd server
+        npm test
+      env:
+        NODE_ENV: test
+        MONGO_URI: mongodb://localhost:27017/easeCart_test
+        JWT_SECRET: test_jwt_secret_key
+        PORT: 5000
+
+    - name: Run Frontend Tests
+      run: |
+        cd client
+        npm test -- --coverage --watchAll=false
+
+    - name: Build Frontend
+      run: |
+        cd client
+        npm run build
+
+    - name: Build Backend
+      run: |
+        cd server
+        npm run build
+
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run Security Audit
+      run: |
+        cd server && npm audit --audit-level moderate
+        cd ../client && npm audit --audit-level moderate
+
+    - name: Run CodeQL Analysis
+      uses: github/codeql-action/init@v2
+      with:
+        languages: javascript
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+
+  deploy-staging:
+    needs: [test, security]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Deploy to Staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your staging deployment commands here
+        # Example: Deploy to staging server or container registry
+
+  deploy-production:
+    needs: [test, security]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Deploy to Production
+      run: |
+        echo "Deploying to production environment..."
+        # Add your production deployment commands here
+        # Example: Deploy to production server or container registry
+
+  docker-build:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: your-registry.com
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    
+    - name: Build and Push Backend Image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./server
+        push: true
+        tags: |
+          your-registry.com/easecart-backend:latest
+          your-registry.com/easecart-backend:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Build and Push Frontend Image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./client
+        push: true
+        tags: |
+          your-registry.com/easecart-frontend:latest
+          your-registry.com/easecart-frontend:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  notify:
+    needs: [test, security, deploy-staging, deploy-production]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify Deployment Status
+      run: |
+        if [ "${{ needs.deploy-production.result }}" == "success" ]; then
+          echo "✅ Production deployment successful!"
+        elif [ "${{ needs.deploy-staging.result }}" == "success" ]; then
+          echo "✅ Staging deployment successful!"
+        elif [ "${{ needs.test.result }}" == "success" ]; then
+          echo "✅ Tests passed!"
+        else
+          echo "❌ Deployment or tests failed!"
+        fi
