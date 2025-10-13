@@ -1,0 +1,16 @@
+{
+  "id": "env-docker",
+  "name": "Docker Environment",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "enabled": true
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "enabled": true
+    }
+  ]
+}

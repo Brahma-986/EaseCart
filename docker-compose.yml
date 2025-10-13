@@ -30,6 +30,8 @@ services:
     restart: unless-stopped
     ports:
       - "5000:5000"
+    env_file:
+      - docker.env
     environment:
       - NODE_ENV=production
       - MONGO_URI=mongodb://admin:password123@mongodb:27017/easeCart?authSource=admin
@@ -46,7 +48,7 @@ services:
     networks:
       - easecart-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      test: ["CMD", "node", "healthcheck.js"]
       interval: 30s
       timeout: 10s
       retries: 3

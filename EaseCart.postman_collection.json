@@ -57,7 +57,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+              "raw": "{\n  \"email\": \"customer@test.com\",\n  \"password\": \"Test123!\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",

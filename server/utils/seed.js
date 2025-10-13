@@ -254,6 +254,8 @@ const complaints = [
 // Seed function
 const seedDatabase = async () => {
   try {
+    // Connect to database first
+    await connectDB();
     console.log('Starting database seeding...');
 
     // Clear existing data
