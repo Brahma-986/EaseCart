@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { getCurrentUser } from './slices/authSlice'
 import Navbar from './components/Navbar'
@@ -35,7 +35,7 @@ export default function App() {
     }
   }, [dispatch, token])
   return (
-    <div className="min-h-screen flex flex-col bg-transparent">
+    <div className="flex min-h-screen flex-col bg-transparent">
       <Navbar />
       <div className="flex-1">
         <Routes>
@@ -63,8 +63,66 @@ export default function App() {
           <Route path="/system-config" element={<ProtectedRoute roles={['admin']}><SystemConfig /></ProtectedRoute>} />
         </Routes>
       </div>
-      <footer className="mt-12 py-10 text-center text-sm text-gray-600">
-        <div className="container-px">© {new Date().getFullYear()} EaseCart</div>
+      <footer className="mt-auto border-t border-slate-200/80 bg-white/60 py-12 backdrop-blur-md">
+        <div className="container-px">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="lg:col-span-2">
+              <div className="flex items-center gap-2 font-extrabold tracking-tight text-slate-900">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-[10px] font-black text-white shadow-soft">
+                  EC
+                </span>
+                EaseCart
+              </div>
+              <p className="mt-3 max-w-md text-sm leading-relaxed text-slate-600">
+                Curated tech and everyday essentials with a checkout flow built for speed and clarity.
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Shop</p>
+              <ul className="mt-4 space-y-2 text-sm font-medium text-slate-600">
+                <li>
+                  <Link to="/#catalog" className="transition hover:text-blue-600">
+                    Catalog
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/cart" className="transition hover:text-blue-600">
+                    Cart
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/wishlist" className="transition hover:text-blue-600">
+                    Wishlist
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Support</p>
+              <ul className="mt-4 space-y-2 text-sm font-medium text-slate-600">
+                <li>
+                  <Link to="/contact" className="transition hover:text-blue-600">
+                    Contact
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/feedback" className="transition hover:text-blue-600">
+                    Feedback
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/about" className="transition hover:text-blue-600">
+                    About
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-slate-200/80 pt-8 text-center text-sm text-slate-500 sm:flex-row sm:text-left">
+            <span>© {new Date().getFullYear()} EaseCart. All rights reserved.</span>
+            <span className="text-slate-400">Built for learning and demos.</span>
+          </div>
+        </div>
       </footer>
     </div>
   )

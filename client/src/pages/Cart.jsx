@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import SafeProductImage from '../components/SafeProductImage'
 import { useSelector, useDispatch } from 'react-redux'
 import { incrementQuantity, decrementQuantity, removeFromCart, clearCart } from '../slices/cartSlice'
 
@@ -42,10 +43,10 @@ export default function Cart() {
               <div key={item._id || item.id} className="card p-6">
                 <div className="flex gap-4">
                   <Link to={`/product/${item._id || item.id}`} className="flex-shrink-0">
-                    <img 
-                      src={item.image || item.images?.[0]?.url} 
-                      alt={item.name} 
-                      className="h-24 w-24 rounded-lg object-cover hover:opacity-90 transition-opacity"
+                    <SafeProductImage
+                      src={item.image || item.images?.[0]?.url}
+                      alt={item.name}
+                      className="h-24 w-24 rounded-lg object-cover transition-opacity hover:opacity-90"
                     />
                   </Link>
                   

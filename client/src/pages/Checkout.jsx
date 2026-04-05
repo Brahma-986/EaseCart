@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { clearCart } from '../slices/cartSlice'
 import { createOrder, createRazorpayOrder, verifyRazorpayPayment } from '../slices/orderSlice'
 import { loadRazorpayScript } from '../utils/razorpay'
+import SafeProductImage from '../components/SafeProductImage'
 
 export default function Checkout() {
   const nav = useNavigate()
@@ -325,10 +326,10 @@ export default function Checkout() {
             <div className="space-y-3 mb-6">
               {items.map(item => (
                 <div key={item._id || item.id} className="flex gap-3">
-                  <img 
-                    src={item.image || item.images?.[0]?.url} 
-                    alt={item.name} 
-                    className="w-12 h-12 rounded-lg object-cover"
+                  <SafeProductImage
+                    src={item.image || item.images?.[0]?.url}
+                    alt={item.name}
+                    className="h-12 w-12 rounded-lg object-cover"
                   />
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-sm text-gray-900 truncate">{item.name}</h4>

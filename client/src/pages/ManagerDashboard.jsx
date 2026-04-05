@@ -5,6 +5,7 @@ import { fetchOrders } from '../slices/orderSlice'
 import { fetchComplaints } from '../slices/complaintSlice'
 import { fetchProducts } from '../slices/productSlice'
 import { fetchAnnouncements } from '../slices/announcementSlice'
+import SafeProductImage from '../components/SafeProductImage'
 
 export default function ManagerDashboard() {
   const dispatch = useDispatch()
@@ -265,7 +266,7 @@ export default function ManagerDashboard() {
                     <tr key={product._id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <img
+                          <SafeProductImage
                             className="h-10 w-10 rounded-lg object-cover"
                             src={product.images?.[0]?.url || product.image}
                             alt={product.name}
