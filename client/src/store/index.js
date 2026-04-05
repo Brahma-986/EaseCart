@@ -6,6 +6,9 @@ import orderReducer from '../slices/orderSlice';
 import announcementReducer from '../slices/announcementSlice';
 import complaintReducer from '../slices/complaintSlice';
 import userReducer from '../slices/userSlice';
+import contactReducer from '../slices/contactSlice';
+import analyticsReducer from '../slices/analyticsSlice';
+import engagementReducer from '../slices/engagementSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +19,9 @@ export const store = configureStore({
     announcements: announcementReducer,
     complaints: complaintReducer,
     users: userReducer,
+    contact: contactReducer,
+    analytics: analyticsReducer,
+    engagement: engagementReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -7,25 +7,26 @@ const Announcement = require('../models/Announcement');
 const Complaint = require('../models/Complaint');
 
 const connectDB = require('../config/db');
+const products = require('./productsDataset');
 
 // Sample data
 const users = [
   {
     name: 'Admin User',
     email: 'admin@easecart.com',
-    password: 'admin123',
+    password: 'Admin123x',
     role: 'admin'
   },
   {
     name: 'Manager User',
     email: 'manager@easecart.com',
-    password: 'manager123',
+    password: 'Manager12',
     role: 'manager'
   },
   {
     name: 'John Doe',
     email: 'john@example.com',
-    password: 'customer123',
+    password: 'Customer1',
     role: 'customer',
     address: {
       street: '123 Main St',
@@ -39,7 +40,7 @@ const users = [
   {
     name: 'Jane Smith',
     email: 'jane@example.com',
-    password: 'customer123',
+    password: 'Customer2',
     role: 'customer',
     address: {
       street: '456 Oak Ave',
@@ -52,148 +53,6 @@ const users = [
   }
 ];
 
-const products = [
-  {
-    name: 'Wireless Bluetooth Headphones',
-    description: 'High-quality wireless headphones with noise cancellation and 30-hour battery life.',
-    price: 199.99,
-    category: 'electronics',
-    stock: 50,
-    images: [
-      { url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500', alt: 'Wireless Headphones' }
-    ],
-    brand: 'TechSound',
-    weight: 0.3,
-    dimensions: { length: 20, width: 18, height: 8 },
-    tags: ['wireless', 'bluetooth', 'noise-cancellation', 'headphones']
-  },
-  {
-    name: 'Smart Fitness Watch',
-    description: 'Advanced fitness tracking watch with heart rate monitor, GPS, and water resistance.',
-    price: 299.99,
-    category: 'electronics',
-    stock: 30,
-    images: [
-      { url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500', alt: 'Smart Watch' }
-    ],
-    brand: 'FitTech',
-    weight: 0.05,
-    dimensions: { length: 4, width: 4, height: 1 },
-    tags: ['fitness', 'smartwatch', 'gps', 'heart-rate']
-  },
-  {
-    name: 'Organic Cotton T-Shirt',
-    description: 'Comfortable and sustainable organic cotton t-shirt in various colors.',
-    price: 29.99,
-    category: 'clothing',
-    stock: 100,
-    images: [
-      { url: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500', alt: 'Cotton T-Shirt' }
-    ],
-    brand: 'EcoWear',
-    weight: 0.2,
-    dimensions: { length: 30, width: 25, height: 1 },
-    tags: ['organic', 'cotton', 'sustainable', 't-shirt']
-  },
-  {
-    name: 'Programming Fundamentals Book',
-    description: 'Comprehensive guide to programming fundamentals with practical examples.',
-    price: 49.99,
-    category: 'books',
-    stock: 75,
-    images: [
-      { url: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=500', alt: 'Programming Book' }
-    ],
-    brand: 'TechBooks',
-    weight: 0.8,
-    dimensions: { length: 23, width: 15, height: 3 },
-    tags: ['programming', 'education', 'computer-science', 'book']
-  },
-  {
-    name: 'Smart Home Security Camera',
-    description: 'HD security camera with night vision, motion detection, and mobile app control.',
-    price: 149.99,
-    category: 'electronics',
-    stock: 25,
-    images: [
-      { url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500', alt: 'Security Camera' }
-    ],
-    brand: 'SecureHome',
-    weight: 0.4,
-    dimensions: { length: 10, width: 10, height: 15 },
-    tags: ['security', 'camera', 'smart-home', 'surveillance']
-  },
-  {
-    name: 'Yoga Mat Premium',
-    description: 'Non-slip yoga mat with extra cushioning for comfort during workouts.',
-    price: 39.99,
-    category: 'sports',
-    stock: 60,
-    images: [
-      { url: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=500', alt: 'Yoga Mat' }
-    ],
-    brand: 'FlexFit',
-    weight: 1.2,
-    dimensions: { length: 180, width: 60, height: 1 },
-    tags: ['yoga', 'fitness', 'mat', 'exercise']
-  },
-  {
-    name: 'Gaming Mechanical Keyboard',
-    description: 'RGB backlit mechanical keyboard with customizable keys and anti-ghosting technology.',
-    price: 129.99,
-    category: 'electronics',
-    stock: 40,
-    images: [
-      { url: 'https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=500', alt: 'Gaming Keyboard' }
-    ],
-    brand: 'GameTech',
-    weight: 1.1,
-    dimensions: { length: 45, width: 15, height: 3 },
-    tags: ['gaming', 'keyboard', 'mechanical', 'rgb']
-  },
-  {
-    name: 'Denim Jacket Classic',
-    description: 'Classic denim jacket made from premium cotton denim with vintage wash.',
-    price: 79.99,
-    category: 'clothing',
-    stock: 35,
-    images: [
-      { url: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=500', alt: 'Denim Jacket' }
-    ],
-    brand: 'DenimCo',
-    weight: 0.8,
-    dimensions: { length: 35, width: 30, height: 2 },
-    tags: ['denim', 'jacket', 'classic', 'vintage']
-  },
-  {
-    name: 'Coffee Maker Deluxe',
-    description: 'Programmable coffee maker with built-in grinder and thermal carafe.',
-    price: 89.99,
-    category: 'home',
-    stock: 20,
-    images: [
-      { url: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=500', alt: 'Coffee Maker' }
-    ],
-    brand: 'BrewMaster',
-    weight: 3.5,
-    dimensions: { length: 30, width: 20, height: 35 },
-    tags: ['coffee', 'kitchen', 'appliance', 'programmable']
-  },
-  {
-    name: 'Running Shoes Pro',
-    description: 'Lightweight running shoes with advanced cushioning and breathable mesh upper.',
-    price: 119.99,
-    category: 'sports',
-    stock: 45,
-    images: [
-      { url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500', alt: 'Running Shoes' }
-    ],
-    brand: 'RunFast',
-    weight: 0.6,
-    dimensions: { length: 32, width: 12, height: 10 },
-    tags: ['running', 'shoes', 'athletic', 'lightweight']
-  }
-];
 
 const announcements = [
   {
@@ -387,10 +246,10 @@ const seedDatabase = async () => {
 
     console.log('Database seeding completed successfully!');
     console.log('\nSample accounts created:');
-    console.log('Admin: admin@easecart.com / admin123');
-    console.log('Manager: manager@easecart.com / manager123');
-    console.log('Customer: john@example.com / customer123');
-    console.log('Customer: jane@example.com / customer123');
+    console.log('Admin: admin@easecart.com / Admin123x');
+    console.log('Manager: manager@easecart.com / Manager12');
+    console.log('Customer: john@example.com / Customer1');
+    console.log('Customer: jane@example.com / Customer2');
 
   } catch (error) {
     console.error('Error seeding database:', error);

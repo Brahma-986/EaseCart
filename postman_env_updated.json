@@ -1,0 +1,19 @@
+{
+  "id": "env-docker",
+  "name": "Docker Environment",
+  "values": [
+    {
+      "type": "any",
+      "value": "http://localhost:5000",
+      "key": "base_url"
+    },
+    {
+      "type": "any",
+      "value": "",
+      "key": "auth_token"
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2025-10-13T09:11:51.086Z",
+  "_postman_exported_using": "Newman/6.2.1"
+}

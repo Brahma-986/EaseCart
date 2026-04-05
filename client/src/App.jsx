@@ -10,6 +10,9 @@ import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import Confirm from './pages/Confirm'
 import Feedback from './pages/Feedback'
+import Contact from './pages/Contact'
+import SupportTickets from './pages/SupportTickets'
+import Wishlist from './pages/Wishlist'
 import About from './pages/About'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -42,6 +45,9 @@ export default function App() {
           <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="/confirm" element={<Confirm />} />
           <Route path="/feedback" element={<Feedback />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/support-tickets" element={<ProtectedRoute><SupportTickets /></ProtectedRoute>} />
+          <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

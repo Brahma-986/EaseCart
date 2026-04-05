@@ -19,7 +19,7 @@ const complaintSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['product', 'order', 'shipping', 'payment', 'service', 'other'],
+    enum: ['product', 'order', 'shipping', 'payment', 'service', 'other', 'general', 'website', 'suggestion'],
     required: true
   },
   status: {

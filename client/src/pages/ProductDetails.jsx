@@ -3,17 +3,25 @@ import { useParams, Link } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchProduct } from '../slices/productSlice'
 import { addToCart } from '../slices/cartSlice'
+import { addRecentlyViewed, toggleWishlist } from '../slices/engagementSlice'
 
 export default function ProductDetails() {
   const { id } = useParams()
   const dispatch = useDispatch()
   const { product, isLoading, error } = useSelector((state) => state.products)
+  const wishlist = useSelector((state) => state.engagement.wishlist)
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
 
   useEffect(() => {
     dispatch(fetchProduct(id))
   }, [dispatch, id])
+
+  useEffect(() => {
+    if (product && (product._id || product.id)) {
+      dispatch(addRecentlyViewed(product))
+    }
+  }, [dispatch, product])
 
   const handleAddToCart = () => {
     const productToAdd = { ...product, quantity }
@@ -57,6 +65,7 @@ export default function ProductDetails() {
   const images = product.images || [{ url: product.image }]
   const isOutOfStock = product.stock === 0
   const isLowStock = product.stock > 0 && product.stock < 10
+  const isWishlisted = wishlist.some((p) => (p._id || p.id) === (product._id || product.id))
 
   return (
     <div className="container-px py-8">
@@ -141,6 +150,16 @@ export default function ProductDetails() {
           <div className="text-3xl font-bold text-gray-900">
             ${product.price.toFixed(2)}
           </div>
+          <button
+            onClick={() => dispatch(toggleWishlist(product))}
+            className={`text-sm px-3 py-2 rounded border ${
+              isWishlisted
+                ? 'border-pink-300 text-pink-700 bg-pink-50'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            {isWishlisted ? '♥ Remove from Wishlist' : '♡ Add to Wishlist'}
+          </button>
 
           {/* Stock Status */}
           <div className="space-y-2">

@@ -14,7 +14,7 @@ export const createOrder = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -30,7 +30,7 @@ export const fetchOrders = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -45,7 +45,7 @@ export const fetchOrder = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -60,7 +60,37 @@ export const fetchOrderStats = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
+export const createRazorpayOrder = createAsyncThunk(
+  'orders/createRazorpayOrder',
+  async (payload, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const response = await axios.post(`${API_URL}/payments/razorpay/create-order`, payload, {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
+export const verifyRazorpayPayment = createAsyncThunk(
+  'orders/verifyRazorpayPayment',
+  async (payload, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const response = await axios.post(`${API_URL}/payments/razorpay/verify`, payload, {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -129,6 +159,23 @@ const orderSlice = createSlice({
       })
       .addCase(fetchOrderStats.fulfilled, (state, action) => {
         state.stats = action.payload.data || action.payload;
+      })
+      .addCase(verifyRazorpayPayment.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(verifyRazorpayPayment.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const newOrder = action.payload.data || action.payload;
+        if (Array.isArray(state.orders)) {
+          state.orders.unshift(newOrder);
+        } else {
+          state.orders = [newOrder];
+        }
+      })
+      .addCase(verifyRazorpayPayment.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
       });
   },
 });

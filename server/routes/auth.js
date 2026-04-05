@@ -21,8 +21,10 @@ const registerValidation = [
     .normalizeEmail()
     .withMessage('Please provide a valid email'),
   body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long')
+    .isLength({ min: 8, max: 24 })
+    .withMessage('Password must be 8–24 characters long')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('Password must include uppercase, lowercase, and a number')
 ];
 
 const loginValidation = [
@@ -31,8 +33,10 @@ const loginValidation = [
     .normalizeEmail()
     .withMessage('Please provide a valid email'),
   body('password')
-    .notEmpty()
-    .withMessage('Password is required')
+    .isLength({ min: 8, max: 24 })
+    .withMessage('Password must be 8–24 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('Password must include uppercase, lowercase, and a number')
 ];
 
 const profileValidation = [

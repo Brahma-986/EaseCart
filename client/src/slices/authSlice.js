@@ -28,7 +28,13 @@ export const login = createAsyncThunk(
       localStorage.setItem('token', token);
       return { token, user };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Login failed');
+      const d = error.response?.data;
+      const status = error.response?.status;
+      let message = d?.message || 'Login failed';
+      if (status === 401 && typeof d?.attemptsRemaining === 'number') {
+        message = `${d.message} (${d.attemptsRemaining} attempt(s) remaining before lockout.)`;
+      }
+      return rejectWithValue(message);
     }
   }
 );

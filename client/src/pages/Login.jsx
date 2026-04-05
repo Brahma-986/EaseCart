@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { login, clearError } from '../slices/authSlice'
+import {
+  PASSWORD_MIN,
+  PASSWORD_MAX,
+  PASSWORD_HINT,
+  getPasswordPolicyErrors,
+} from '../utils/passwordPolicy'
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -42,14 +48,15 @@ export default function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    if (getPasswordPolicyErrors(formData.password).length > 0) return
     dispatch(login(formData))
   }
 
   const handleDemoLogin = (role) => {
     const demoCredentials = {
-      admin: { email: 'admin@easecart.com', password: 'admin123' },
-      manager: { email: 'manager@easecart.com', password: 'manager123' },
-      customer: { email: 'john@example.com', password: 'customer123' }
+      admin: { email: 'admin@easecart.com', password: 'Admin123x' },
+      manager: { email: 'manager@easecart.com', password: 'Manager12' },
+      customer: { email: 'john@example.com', password: 'Customer1' },
     }
     
     const credentials = demoCredentials[role]
@@ -108,12 +115,32 @@ export default function Login() {
                   type="password"
                   autoComplete="current-password"
                   required
+                  minLength={PASSWORD_MIN}
+                  maxLength={PASSWORD_MAX}
                   className="input w-full"
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleChange}
                 />
               </div>
+              <p className="mt-2 text-xs text-gray-600">{PASSWORD_HINT}</p>
+              <p className="mt-1 text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-md px-2 py-1.5">
+                After 3 failed login attempts, this email is locked for 15 minutes.
+              </p>
+              {formData.password.length > 0 && (
+                <ul className="mt-2 text-xs space-y-1">
+                  {[
+                    { ok: formData.password.length >= PASSWORD_MIN && formData.password.length <= PASSWORD_MAX, text: `${PASSWORD_MIN}–${PASSWORD_MAX} characters` },
+                    { ok: /[a-z]/.test(formData.password), text: 'Lowercase letter' },
+                    { ok: /[A-Z]/.test(formData.password), text: 'Uppercase letter' },
+                    { ok: /[0-9]/.test(formData.password), text: 'Number' },
+                  ].map(({ ok, text }) => (
+                    <li key={text} className={ok ? 'text-green-700 flex items-center gap-1' : 'text-gray-500 flex items-center gap-1'}>
+                      <span>{ok ? '✓' : '○'}</span> {text}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {error && (
@@ -134,7 +161,10 @@ export default function Login() {
             <div>
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={
+                  isLoading ||
+                  (formData.password.length > 0 && getPasswordPolicyErrors(formData.password).length > 0)
+                }
                 className="btn btn-primary w-full"
               >
                 {isLoading ? (
@@ -158,7 +188,7 @@ export default function Login() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Demo Accounts</span>
+                <span className="px-2 bg-white text-gray-500">Demo Accounts (strong passwords)</span>
               </div>
             </div>
 

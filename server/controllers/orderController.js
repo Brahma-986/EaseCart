@@ -1,6 +1,8 @@
 const { validationResult } = require('express-validator');
 const Order = require('../models/Order');
-const Product = require('../models/Product');
+const User = require('../models/User');
+const { buildOrderItemsFromCart } = require('../utils/orderHelpers');
+const { sendOrderConfirmation } = require('../utils/email');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -19,46 +21,17 @@ const createOrder = async (req, res) => {
   const { items, shippingAddress, paymentMethod } = req.body;
 
   try {
-    // Validate items and check stock
-    const orderItems = [];
-    let totalPrice = 0;
-
-    for (const item of items) {
-      const product = await Product.findById(item.product);
-
-      if (!product || !product.isActive) {
-        return res.status(400).json({
-          success: false,
-          message: `Product ${item.product} not found or inactive`
-        });
-      }
-
-      if (product.stock < item.quantity) {
-        return res.status(400).json({
-          success: false,
-          message: `Insufficient stock for ${product.name}`
-        });
-      }
-
-      orderItems.push({
-        product: product._id,
-        name: product.name,
-        price: product.price,
-        quantity: item.quantity,
-        image: product.images[0]?.url
+    if (paymentMethod === 'razorpay') {
+      return res.status(400).json({
+        success: false,
+        message: 'Use the Razorpay checkout flow to pay with Razorpay'
       });
-
-      totalPrice += product.price * item.quantity;
-
-      // Reduce stock
-      product.stock -= item.quantity;
-      await product.save();
     }
 
-    // Calculate tax and shipping (simplified)
-    const taxPrice = totalPrice * 0.1; // 10% tax
-    const shippingPrice = totalPrice > 100 ? 0 : 10; // Free shipping over $100
-    const finalTotal = totalPrice + taxPrice + shippingPrice;
+    const { orderItems, taxPrice, shippingPrice, totalPrice: finalTotal } = await buildOrderItemsFromCart(
+      items,
+      { deductStock: true }
+    );
 
     const order = await Order.create({
       user: req.user._id,
@@ -73,7 +46,6 @@ const createOrder = async (req, res) => {
     // Populate product details
     await order.populate('items.product');
 
-    // Emit socket event for real-time update
     const io = req.app.get('io');
     io.to(req.user._id.toString()).emit('orderCreated', {
       orderId: order._id,
@@ -81,12 +53,23 @@ const createOrder = async (req, res) => {
       status: order.status
     });
 
+    const userDoc = await User.findById(req.user._id).select('email name');
+    if (userDoc?.email) {
+      sendOrderConfirmation(order, userDoc.email, userDoc.name).catch(() => {});
+    }
+
     res.status(201).json({
       success: true,
       message: 'Order created successfully',
       data: order
     });
   } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({
+        success: false,
+        message: error.message
+      });
+    }
     res.status(500).json({
       success: false,
       message: 'Server error'

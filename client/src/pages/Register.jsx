@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { register, clearError } from '../slices/authSlice'
+import {
+  PASSWORD_MIN,
+  PASSWORD_MAX,
+  PASSWORD_HINT,
+  getPasswordPolicyErrors,
+} from '../utils/passwordPolicy'
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -35,7 +41,9 @@ export default function Register() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
+
+    if (getPasswordPolicyErrors(formData.password).length > 0) return
+
     if (formData.password !== formData.confirmPassword) {
       alert('Passwords do not match')
       return
@@ -44,6 +52,10 @@ export default function Register() {
     const { confirmPassword, ...registerData } = formData
     dispatch(register(registerData))
   }
+
+  const passwordInvalid = getPasswordPolicyErrors(formData.password).length > 0
+  const confirmMismatch =
+    formData.confirmPassword.length > 0 && formData.password !== formData.confirmPassword
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -113,12 +125,29 @@ export default function Register() {
                   type="password"
                   autoComplete="new-password"
                   required
+                  minLength={PASSWORD_MIN}
+                  maxLength={PASSWORD_MAX}
                   className="input w-full"
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleChange}
                 />
               </div>
+              <p className="mt-2 text-xs text-gray-600">{PASSWORD_HINT}</p>
+              {formData.password.length > 0 && (
+                <ul className="mt-2 text-xs space-y-1">
+                  {[
+                    { ok: formData.password.length >= PASSWORD_MIN && formData.password.length <= PASSWORD_MAX, text: `${PASSWORD_MIN}–${PASSWORD_MAX} characters` },
+                    { ok: /[a-z]/.test(formData.password), text: 'Lowercase letter' },
+                    { ok: /[A-Z]/.test(formData.password), text: 'Uppercase letter' },
+                    { ok: /[0-9]/.test(formData.password), text: 'Number' },
+                  ].map(({ ok, text }) => (
+                    <li key={text} className={ok ? 'text-green-700 flex items-center gap-1' : 'text-gray-500 flex items-center gap-1'}>
+                      <span>{ok ? '✓' : '○'}</span> {text}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             <div>
@@ -132,6 +161,8 @@ export default function Register() {
                   type="password"
                   autoComplete="new-password"
                   required
+                  minLength={PASSWORD_MIN}
+                  maxLength={PASSWORD_MAX}
                   className="input w-full"
                   placeholder="Confirm your password"
                   value={formData.confirmPassword}
@@ -177,7 +208,7 @@ export default function Register() {
             <div>
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || passwordInvalid || confirmMismatch}
                 className="btn btn-primary w-full"
               >
                 {isLoading ? (

@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { clearCart } from '../slices/cartSlice'
-import { createOrder } from '../slices/orderSlice'
+import { createOrder, createRazorpayOrder, verifyRazorpayPayment } from '../slices/orderSlice'
+import { loadRazorpayScript } from '../utils/razorpay'
 
 export default function Checkout() {
   const nav = useNavigate()
@@ -15,11 +16,15 @@ export default function Checkout() {
   const calculateShipping = () => totalAmount > 100 ? 0 : 10 // Free shipping over $100
   const calculateTotal = () => totalAmount + calculateTax() + calculateShipping()
 
+  const cartItemsForApi = items.map((item) => ({
+    product: item._id || item.id,
+    quantity: item.quantity
+  }))
+
   const handlePlaceOrder = async (e) => {
     e.preventDefault()
     setIsProcessing(true)
 
-    // Check if user is authenticated
     if (!user) {
       alert('Please log in to place an order.')
       nav('/login', { state: { from: { pathname: '/checkout' } } })
@@ -28,6 +33,76 @@ export default function Checkout() {
     }
 
     const formData = new FormData(e.target)
+    const paymentMethod = formData.get('paymentMethod')
+    const shippingAddress = {
+      street: formData.get('address'),
+      city: formData.get('city'),
+      state: formData.get('state'),
+      zipCode: formData.get('zip'),
+      country: formData.get('country') || 'USA'
+    }
+
+    if (paymentMethod === 'razorpay') {
+      try {
+        const created = await dispatch(createRazorpayOrder({ items: cartItemsForApi })).unwrap()
+        const rp = created.data
+        const Razorpay = await loadRazorpayScript()
+
+        const options = {
+          key: rp.keyId,
+          amount: String(rp.amount),
+          currency: rp.currency,
+          order_id: rp.razorpayOrderId,
+          name: 'EaseCart',
+          description: 'Order payment',
+          prefill: {
+            name: formData.get('name') || user.name || '',
+            email: formData.get('email') || user.email || ''
+          },
+          theme: { color: '#2563eb' },
+          handler: async (response) => {
+            try {
+              const result = await dispatch(
+                verifyRazorpayPayment({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  items: cartItemsForApi,
+                  shippingAddress,
+                  paymentMethod: 'razorpay'
+                })
+              ).unwrap()
+              dispatch(clearCart())
+              nav('/confirm', { state: { order: result.data } })
+            } catch (err) {
+              console.error('Razorpay verify failed:', err)
+              alert(typeof err === 'string' ? err : err?.message || 'Payment verification failed.')
+            } finally {
+              setIsProcessing(false)
+            }
+          },
+          modal: {
+            ondismiss: () => setIsProcessing(false)
+          }
+        }
+
+        const rzp = new Razorpay(options)
+        rzp.on('payment.failed', (res) => {
+          console.error('Razorpay payment failed:', res)
+          const msg = res?.error?.description || 'Payment failed.'
+          alert(msg)
+          setIsProcessing(false)
+        })
+        rzp.open()
+      } catch (error) {
+        console.error('Razorpay checkout failed:', error)
+        const errorMessage = typeof error === 'string' ? error : error?.message || 'Could not start payment.'
+        alert(`Error: ${errorMessage}`)
+        setIsProcessing(false)
+      }
+      return
+    }
+
     const orderData = {
       items: items.map(item => ({
         product: item._id || item.id,
@@ -36,14 +111,8 @@ export default function Checkout() {
         price: item.price,
         image: item.image || item.images?.[0]?.url
       })),
-      shippingAddress: {
-        street: formData.get('address'),
-        city: formData.get('city'),
-        state: formData.get('state'),
-        zipCode: formData.get('zip'),
-        country: formData.get('country') || 'USA'
-      },
-      paymentMethod: formData.get('paymentMethod'),
+      shippingAddress,
+      paymentMethod,
       taxPrice: calculateTax(),
       shippingPrice: calculateShipping(),
       totalPrice: calculateTotal()
@@ -51,7 +120,6 @@ export default function Checkout() {
 
     try {
       const result = await dispatch(createOrder(orderData)).unwrap()
-      console.log('Order created successfully:', result)
       dispatch(clearCart())
       nav('/confirm', { state: { order: result.data } })
     } catch (error) {
@@ -166,6 +234,7 @@ export default function Checkout() {
                   required
                 >
                   <option value="USA">United States</option>
+                  <option value="India">India</option>
                   <option value="Canada">Canada</option>
                   <option value="UK">United Kingdom</option>
                   <option value="Australia">Australia</option>
@@ -178,6 +247,9 @@ export default function Checkout() {
           <div className="card p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Payment Information</h2>
             <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Pay with Razorpay (UPI, cards, netbanking). Charges are in INR; your cart total in USD is converted on the server using the configured rate.
+              </p>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
                 <div className="space-y-2">
@@ -185,15 +257,29 @@ export default function Checkout() {
                     <input 
                       type="radio" 
                       name="paymentMethod" 
-                      value="card" 
+                      value="razorpay" 
                       defaultChecked 
+                      className="mr-3"
+                    />
+                    <div className="flex items-center">
+                      <svg className="w-6 h-6 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+                      </svg>
+                      Razorpay (recommended)
+                    </div>
+                  </label>
+                  <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input 
+                      type="radio" 
+                      name="paymentMethod" 
+                      value="card" 
                       className="mr-3"
                     />
                     <div className="flex items-center">
                       <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" />
                       </svg>
-                      Credit/Debit Card
+                      Credit/Debit Card (demo)
                     </div>
                   </label>
                   <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">

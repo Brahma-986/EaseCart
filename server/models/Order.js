@@ -36,13 +36,15 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: {
     type: String,
     required: true,
-    enum: ['card', 'paypal', 'bank-transfer']
+    enum: ['card', 'paypal', 'bank-transfer', 'razorpay']
   },
   paymentResult: {
     id: String,
     status: String,
     update_time: String,
-    email_address: String
+    email_address: String,
+    razorpay_payment_id: String,
+    razorpay_order_id: String
   },
   taxPrice: {
     type: Number,

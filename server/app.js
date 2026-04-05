@@ -16,16 +16,32 @@ const announcementRoutes = require('./routes/announcements');
 const complaintRoutes = require('./routes/complaints');
 const userRoutes = require('./routes/users');
 const healthRoutes = require('./routes/health');
+const paymentRoutes = require('./routes/payments');
+const contactRoutes = require('./routes/contact');
+const analyticsRoutes = require('./routes/analytics');
 
 // Middleware
 const { errorHandler } = require('./middlewares/errorHandler');
 
 const app = express();
 const server = http.createServer(app);
+
+// Allow multiple localhost ports in dev (frontend may use 5173 or 5174)
+const allowedOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map((o) => o.trim())
+  : ['http://localhost:5173', 'http://localhost:5174'];
+const corsOptions = {
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(null, false);
+  },
+  credentials: true
+};
+
 const io = socketIo(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    methods: ["GET", "POST"]
+    origin: allowedOrigins,
+    methods: ['GET', 'POST']
   }
 });
 
@@ -34,10 +50,7 @@ connectDB();
 
 // Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
-  credentials: true
-}));
+app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -71,8 +84,11 @@ app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/complaints', complaintRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', userRoutes);
 
 

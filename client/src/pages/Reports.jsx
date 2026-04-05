@@ -1,67 +1,45 @@
 import React, { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { fetchOrderStats } from '../slices/orderSlice'
+import { fetchReports } from '../slices/analyticsSlice'
 import { fetchComplaints } from '../slices/complaintSlice'
-import { fetchUsers } from '../slices/userSlice'
 import { fetchProducts } from '../slices/productSlice'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts'
 
 export default function Reports() {
   const dispatch = useDispatch()
-  const { user } = useSelector((state) => state.auth)
-  const { orders, stats: orderStats } = useSelector((state) => state.orders)
+  const { data, isLoading, error } = useSelector((state) => state.analytics)
   const { complaints } = useSelector((state) => state.complaints)
-  const { users } = useSelector((state) => state.users)
   const { products } = useSelector((state) => state.products)
 
   const [timeRange, setTimeRange] = useState('6months')
 
+  const monthsMap = { '1month': 1, '3months': 3, '6months': 6, '1year': 12 }
+
   useEffect(() => {
-    dispatch(fetchOrderStats())
+    dispatch(fetchReports({ months: monthsMap[timeRange] || 6 }))
     dispatch(fetchComplaints())
     dispatch(fetchProducts())
-    if (user?.role === 'admin') {
-      dispatch(fetchUsers())
-    }
-  }, [dispatch, user])
+  }, [dispatch, timeRange])
 
-  // Sample data for charts (in real app, this would come from API)
-  const salesData = [
-    { month: 'Jan', sales: 12000, orders: 45 },
-    { month: 'Feb', sales: 19000, orders: 67 },
-    { month: 'Mar', sales: 15000, orders: 52 },
-    { month: 'Apr', sales: 25000, orders: 89 },
-    { month: 'May', sales: 22000, orders: 78 },
-    { month: 'Jun', sales: 30000, orders: 95 }
-  ]
-
-  const orderStatusData = [
-    { name: 'Pending', value: 25, color: '#FFA500' },
-    { name: 'Shipped', value: 150, color: '#0088FE' },
-    { name: 'Delivered', value: 275, color: '#00C49F' },
-    { name: 'Cancelled', value: 15, color: '#FF4444' }
-  ]
-
-  const categoryData = [
-    { name: 'Electronics', value: 35, color: '#8884d8' },
-    { name: 'Home', value: 25, color: '#82ca9d' },
-    { name: 'Sports', value: 20, color: '#ffc658' },
-    { name: 'Other', value: 20, color: '#ff7300' }
-  ]
-
-  const complaintData = [
-    { month: 'Jan', complaints: 5, resolved: 4 },
-    { month: 'Feb', complaints: 8, resolved: 7 },
-    { month: 'Mar', complaints: 12, resolved: 10 },
-    { month: 'Apr', complaints: 6, resolved: 6 },
-    { month: 'May', complaints: 9, resolved: 8 },
-    { month: 'Jun', complaints: 4, resolved: 3 }
-  ]
-
-  const totalRevenue = salesData.reduce((sum, item) => sum + item.sales, 0)
-  const totalOrders = salesData.reduce((sum, item) => sum + item.orders, 0)
+  const d = data || {}
+  const salesData = d.monthlyData || []
+  const orderStatusData = d.orderStatusData || []
+  const categoryData = d.categoryData || []
+  const segments = d.userSegments || {}
+  const totalRevenue = d.totalRevenue ?? 0
+  const totalOrders = d.totalOrders ?? 0
+  const totalUsers = d.totalUsers ?? 0
+  const avgOrderValue = d.avgOrderValue ?? 0
   const totalComplaints = complaints?.length || 0
-  const resolvedComplaints = complaints?.filter(c => c.status === 'resolved').length || 0
+  const resolvedComplaints = complaints?.filter((c) => c.status === 'resolved').length || 0
+
+  if (isLoading && !data) {
+    return (
+      <div className="container-px py-16 flex justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      </div>
+    )
+  }
 
   return (
     <div className="container-px py-8">
@@ -70,22 +48,19 @@ export default function Reports() {
         <p className="text-gray-600">Comprehensive insights into your business performance</p>
       </div>
 
-      {/* Time Range Selector */}
       <div className="mb-6">
-        <div className="flex items-center space-x-4">
-          <label className="text-sm font-medium text-gray-700">Time Range:</label>
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="input w-40"
-          >
-            <option value="1month">Last Month</option>
-            <option value="3months">Last 3 Months</option>
-            <option value="6months">Last 6 Months</option>
-            <option value="1year">Last Year</option>
-          </select>
-        </div>
+        <label className="text-sm font-medium text-gray-700 mr-3">Time Range:</label>
+        <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} className="input w-40">
+          <option value="1month">Last Month</option>
+          <option value="3months">Last 3 Months</option>
+          <option value="6months">Last 6 Months</option>
+          <option value="1year">Last Year</option>
+        </select>
       </div>
+
+      {error && (
+        <div className="mb-6 p-4 rounded-lg bg-red-50 text-red-700">{error}</div>
+      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -98,11 +73,10 @@ export default function Reports() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">${totalRevenue.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">${Number(totalRevenue).toLocaleString()}</p>
             </div>
           </div>
         </div>
-
         <div className="card p-6">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -116,7 +90,6 @@ export default function Reports() {
             </div>
           </div>
         </div>
-
         <div className="card p-6">
           <div className="flex items-center">
             <div className="p-2 bg-yellow-100 rounded-lg">
@@ -125,12 +98,11 @@ export default function Reports() {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Complaints</p>
+              <p className="text-sm font-medium text-gray-600">Support Tickets</p>
               <p className="text-2xl font-bold text-gray-900">{totalComplaints}</p>
             </div>
           </div>
         </div>
-
         <div className="card p-6">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
@@ -139,31 +111,52 @@ export default function Reports() {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Active Users</p>
-              <p className="text-2xl font-bold text-gray-900">{users?.length || 0}</p>
+              <p className="text-sm font-medium text-gray-600">Total Users</p>
+              <p className="text-2xl font-bold text-gray-900">{totalUsers}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Charts Grid */}
+      {/* Customer Segmentation */}
+      <div className="card p-6 mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Customer Segmentation</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-4 bg-blue-50 rounded-lg">
+            <p className="text-sm font-medium text-blue-700">New Customers</p>
+            <p className="text-2xl font-bold text-blue-900">{segments.newCustomers ?? 0}</p>
+            <p className="text-xs text-blue-600 mt-1">Registered in last 30 days</p>
+          </div>
+          <div className="p-4 bg-green-50 rounded-lg">
+            <p className="text-sm font-medium text-green-700">Frequent Buyers</p>
+            <p className="text-2xl font-bold text-green-900">{segments.frequentBuyers ?? 0}</p>
+            <p className="text-xs text-green-600 mt-1">3+ orders</p>
+          </div>
+          <div className="p-4 bg-amber-50 rounded-lg">
+            <p className="text-sm font-medium text-amber-700">Inactive Users</p>
+            <p className="text-2xl font-bold text-amber-900">{segments.inactiveUsers ?? 0}</p>
+            <p className="text-xs text-amber-600 mt-1">No order in 90+ days</p>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500 mt-3">Total customers: {segments.total ?? 0}</p>
+      </div>
+
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Sales Chart */}
         <div className="card p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Sales</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Revenue & Orders</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={salesData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Sales']} />
+              <Tooltip formatter={(v) => (typeof v === 'number' && v > 100 ? `$${v.toLocaleString()}` : v)} />
               <Legend />
-              <Line type="monotone" dataKey="sales" stroke="#8884d8" strokeWidth={2} />
+              <Line type="monotone" dataKey="sales" stroke="#8884d8" strokeWidth={2} name="Revenue ($)" />
+              <Line type="monotone" dataKey="orders" stroke="#82ca9d" strokeWidth={2} name="Orders" />
             </LineChart>
           </ResponsiveContainer>
         </div>
-
-        {/* Order Status Chart */}
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Status Distribution</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -178,16 +171,14 @@ export default function Reports() {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {orderStatusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                {orderStatusData.map((entry, i) => (
+                  <Cell key={i} fill={entry.color || '#8884d8'} />
                 ))}
               </Pie>
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
         </div>
-
-        {/* Product Categories */}
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Product Categories</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -196,77 +187,19 @@ export default function Reports() {
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="value" fill="#8884d8" />
+              <Bar dataKey="value" fill="#8884d8" name="Products" />
             </BarChart>
           </ResponsiveContainer>
         </div>
-
-        {/* Complaints Trend */}
-        <div className="card p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Complaints Trend</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={complaintData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="complaints" stroke="#ff4444" strokeWidth={2} name="Complaints" />
-              <Line type="monotone" dataKey="resolved" stroke="#00C49F" strokeWidth={2} name="Resolved" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Detailed Statistics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Order Statistics */}
-        <div className="card p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Statistics</h3>
-          <div className="space-y-4">
-            {orderStatusData.map((status) => (
-              <div key={status.name} className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div 
-                    className="w-4 h-4 rounded-full mr-3" 
-                    style={{ backgroundColor: status.color }}
-                  ></div>
-                  <span className="text-gray-700">{status.name}</span>
-                </div>
-                <span className="font-semibold">{status.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Top Products */}
-        <div className="card p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Products</h3>
-          <div className="space-y-3">
-            {products?.slice(0, 5).map((product, index) => (
-              <div key={product._id} className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium mr-3">
-                    {index + 1}
-                  </span>
-                  <span className="text-gray-700 truncate">{product.name}</span>
-                </div>
-                <span className="font-semibold">${product.price}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Performance Metrics */}
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h3>
           <div className="space-y-4">
             <div className="flex justify-between">
               <span className="text-gray-700">Avg Order Value</span>
-              <span className="font-semibold">${(totalRevenue / totalOrders).toFixed(2)}</span>
+              <span className="font-semibold">${Number(avgOrderValue).toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-700">Complaint Resolution Rate</span>
+              <span className="text-gray-700">Resolution Rate</span>
               <span className="font-semibold">
                 {totalComplaints > 0 ? ((resolvedComplaints / totalComplaints) * 100).toFixed(1) : 0}%
               </span>
@@ -276,10 +209,31 @@ export default function Reports() {
               <span className="font-semibold">{products?.length || 0}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-700">Active Users</span>
-              <span className="font-semibold">{users?.filter(u => u.isActive).length || 0}</span>
+              <span className="text-gray-700">Orders per User</span>
+              <span className="font-semibold">
+                {totalUsers > 0 ? (totalOrders / totalUsers).toFixed(1) : 0}
+              </span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Order Statistics Table */}
+      <div className="card p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Status Breakdown</h3>
+        <div className="space-y-3">
+          {orderStatusData.map((s) => (
+            <div key={s.name} className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div
+                  className="w-4 h-4 rounded-full mr-3"
+                  style={{ backgroundColor: s.color || '#8884d8' }}
+                />
+                <span className="text-gray-700">{s.name}</span>
+              </div>
+              <span className="font-semibold">{s.value}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

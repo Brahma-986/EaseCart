@@ -1,13 +1,22 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import { toggleWishlist } from '../slices/engagementSlice'
 
-export default function ProductCard({ product, onAdd }) {
+export default function ProductCard({ product, onAdd, badge = '', showShare = true }) {
+  const dispatch = useDispatch()
+  const wishlist = useSelector((state) => state.engagement.wishlist)
   const isOutOfStock = product.stock === 0
   const isLowStock = product.stock > 0 && product.stock < 10
+  const productPath = `/product/${product._id || product.id}`
+  const productUrl = `${window.location.origin}${productPath}`
+  const shareText = `Check out ${product.name} on EaseCart!`
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${productUrl}`)}`
+  const isWishlisted = wishlist.some((p) => (p._id || p.id) === (product._id || product.id))
 
   return (
     <div className="card overflow-hidden group hover:shadow-lg transition-shadow duration-300">
-      <Link to={`/product/${product._id || product.id}`}>
+      <Link to={productPath}>
         <div className="aspect-square overflow-hidden relative">
           <img 
             src={product.image || product.images?.[0]?.url} 
@@ -28,6 +37,13 @@ export default function ProductCard({ product, onAdd }) {
               </span>
             </div>
           )}
+          {badge && (
+            <div className="absolute bottom-2 left-2">
+              <span className="bg-pink-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                {badge}
+              </span>
+            </div>
+          )}
           {product.category && (
             <div className="absolute top-2 left-2">
               <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold capitalize">
@@ -38,7 +54,7 @@ export default function ProductCard({ product, onAdd }) {
         </div>
       </Link>
       <div className="p-4">
-        <Link to={`/product/${product._id || product.id}`}>
+        <Link to={productPath}>
           <h3 className="font-semibold text-gray-900 hover:text-blue-600 transition-colors duration-200 line-clamp-2">
             {product.name}
           </h3>
@@ -46,6 +62,16 @@ export default function ProductCard({ product, onAdd }) {
         <p className="mt-1 text-sm text-gray-600 line-clamp-2">
           {product.description}
         </p>
+        <button
+          className={`mt-2 text-xs px-2 py-1 rounded border ${
+            isWishlisted
+              ? 'border-pink-300 text-pink-700 bg-pink-50'
+              : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+          }`}
+          onClick={() => dispatch(toggleWishlist(product))}
+        >
+          {isWishlisted ? '♥ In Wishlist' : '♡ Add to Wishlist'}
+        </button>
         
         {product.brand && (
           <p className="mt-1 text-xs text-gray-500 font-medium">
@@ -75,6 +101,27 @@ export default function ProductCard({ product, onAdd }) {
             {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
           </button>
         </div>
+
+        {showShare && (
+          <div className="mt-3 flex gap-2 flex-wrap">
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs px-2 py-1 rounded border border-green-300 text-green-700 hover:bg-green-50"
+            >
+              WhatsApp
+            </a>
+            <a
+              href="https://www.instagram.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs px-2 py-1 rounded border border-pink-300 text-pink-700 hover:bg-pink-50"
+            >
+              Instagram
+            </a>
+          </div>
+        )}
 
         {product.rating && product.rating.average > 0 && (
           <div className="mt-2 flex items-center">

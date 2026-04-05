@@ -52,7 +52,7 @@ export default function CustomerDashboard() {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Complaints</p>
+              <p className="text-sm font-medium text-gray-600">Support Tickets</p>
               <p className="text-2xl font-bold text-gray-900">{complaints.length}</p>
             </div>
           </div>
@@ -184,9 +184,21 @@ export default function CustomerDashboard() {
             </div>
           </Link>
 
-          <Link to="/feedback" className="card p-6 hover:shadow-lg transition-shadow">
+          <Link to="/support-tickets" className="card p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-center">
               <svg className="w-8 h-8 text-yellow-600 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              <div>
+                <h3 className="font-medium text-gray-900">Support Tickets</h3>
+                <p className="text-sm text-gray-600">View your tickets & get help</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link to="/feedback" className="card p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center">
+              <svg className="w-8 h-8 text-purple-600 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
               <div>

@@ -7,6 +7,7 @@ export default function Navbar() {
   const dispatch = useDispatch()
   const { totalItems } = useSelector((state) => state.cart)
   const { isAuthenticated, user } = useSelector((state) => state.auth)
+  const wishlistCount = useSelector((state) => state.engagement.wishlist.length)
 
   const linkClass = ({ isActive }) =>
     `px-3 py-2 rounded-lg text-sm font-medium ${isActive ? 'bg-white/70 text-gray-900' : 'text-gray-700 hover:text-gray-900 hover:bg-white/60'}`
@@ -28,7 +29,13 @@ export default function Navbar() {
             <span className="mr-1">Cart</span>
             <span className="inline-flex items-center justify-center rounded-md min-w-5 px-1 bg-blue-600 text-white text-xs">{totalItems}</span>
           </NavLink>
+          <NavLink to="/wishlist" className={linkClass}>
+            <span className="mr-1">Wishlist</span>
+            <span className="inline-flex items-center justify-center rounded-md min-w-5 px-1 bg-pink-600 text-white text-xs">{wishlistCount}</span>
+          </NavLink>
           <NavLink to="/about" className={linkClass}>About</NavLink>
+          <NavLink to="/contact" className={linkClass}>Contact</NavLink>
+          <NavLink to="/feedback" className={linkClass}>Feedback</NavLink>
 
           {isAuthenticated ? (
             <>

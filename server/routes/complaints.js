@@ -23,7 +23,7 @@ const complaintValidation = [
     .isLength({ min: 10, max: 2000 })
     .withMessage('Message must be between 10 and 2000 characters'),
   body('category')
-    .isIn(['product', 'order', 'shipping', 'payment', 'service', 'other'])
+    .isIn(['product', 'order', 'shipping', 'payment', 'service', 'other', 'general', 'website', 'suggestion'])
     .withMessage('Invalid category'),
   body('priority')
     .optional()

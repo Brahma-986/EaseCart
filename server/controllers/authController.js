@@ -1,6 +1,11 @@
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
+const {
+  ensureNotLocked,
+  recordFailedAttempt,
+  clearOnSuccess,
+} = require('../utils/loginThrottle');
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -79,36 +84,64 @@ const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    const lockCheck = await ensureNotLocked(email);
+    if (!lockCheck.ok) {
+      return res.status(429).json({
+        success: false,
+        message: `Too many failed login attempts. Please try again after ${lockCheck.lockedUntil.toLocaleString()}.`,
+        lockedUntil: lockCheck.lockedUntil,
+        code: 'LOGIN_LOCKED',
+      });
+    }
+    const { normalizedEmail } = lockCheck;
+
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
     if (!user) {
+      const r = await recordFailedAttempt(normalizedEmail);
+      if (r.locked) {
+        return res.status(429).json({
+          success: false,
+          message: `Too many failed login attempts. Please try again after ${r.lockedUntil.toLocaleString()}.`,
+          lockedUntil: r.lockedUntil,
+          code: 'LOGIN_LOCKED',
+        });
+      }
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid credentials',
+        attemptsRemaining: r.attemptsRemaining,
       });
     }
 
-    // Check if user is active
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
-        message: 'Account is deactivated'
+        message: 'Account is deactivated',
       });
     }
 
-    // Check if password matches
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      const r = await recordFailedAttempt(normalizedEmail);
+      if (r.locked) {
+        return res.status(429).json({
+          success: false,
+          message: `Too many failed login attempts. Please try again after ${r.lockedUntil.toLocaleString()}.`,
+          lockedUntil: r.lockedUntil,
+          code: 'LOGIN_LOCKED',
+        });
+      }
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid credentials',
+        attemptsRemaining: r.attemptsRemaining,
       });
     }
 
-    // Generate token
+    await clearOnSuccess(normalizedEmail);
+
     const token = generateToken(user._id);
 
-    // Update last login
     user.lastLogin = new Date();
     await user.save({ validateBeforeSave: false });
 
